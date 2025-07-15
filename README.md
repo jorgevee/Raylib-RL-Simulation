@@ -75,6 +75,16 @@ typedef struct {
 } GridWorld;
 ```
 
+#### Comprehensive Reward Structure
+
+The environment implements a carefully designed reward system to encourage optimal pathfinding:
+
+- **Goal Reached**: `+100` points - Large positive reward for task completion
+- **Wall Collision**: `-10` points - Moderate penalty for invalid moves  
+- **Empty Space Movement**: `-1` point - Small penalty encouraging efficiency
+
+The reward values are fully configurable and include validation to ensure effective learning. See `REWARD_DESIGN.md` for detailed design rationale.
+
 #### Cell Types
 ```c
 typedef enum {
@@ -343,6 +353,7 @@ height=15
 goal_reward=100.0
 step_penalty=-1.0
 wall_penalty=-10.0
+max_steps=300
 
 [agent]
 learning_rate=0.1
@@ -356,6 +367,25 @@ cell_size=30
 show_q_values=true
 show_trail=true
 animation_speed=0.5
+```
+
+### Reward Configuration
+
+The reward system supports both static and dynamic configuration:
+
+```c
+// Static configuration at creation
+EnvironmentConfig config = {
+    .width = 15, .height = 15,
+    .goal_reward = 150.0f,
+    .wall_penalty = -15.0f,
+    .step_penalty = -0.5f,
+    .max_steps = 300
+};
+GridWorld* world = create_grid_world_from_config(config);
+
+// Dynamic configuration during runtime
+set_reward_values(world, 200.0f, -20.0f, -2.0f);
 ```
 
 ## Performance Considerations

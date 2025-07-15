@@ -80,6 +80,43 @@ GridWorld* create_grid_world(int width, int height) {
     return world;
 }
 
+// Create a grid world from configuration
+GridWorld* create_grid_world_from_config(EnvironmentConfig config) {
+    // Validate configuration parameters
+    if (config.width <= 0 || config.height <= 0) {
+        fprintf(stderr, "Error: Grid dimensions must be positive (width=%d, height=%d)\n", 
+                config.width, config.height);
+        return NULL;
+    }
+    
+    if (config.max_steps <= 0) {
+        fprintf(stderr, "Error: max_steps must be positive (max_steps=%d)\n", config.max_steps);
+        return NULL;
+    }
+    
+    // Create basic grid world
+    GridWorld* world = create_grid_world(config.width, config.height);
+    if (!world) {
+        return NULL;
+    }
+    
+    // Apply configuration values
+    world->step_penalty = config.step_penalty;
+    world->goal_reward = config.goal_reward;
+    world->wall_penalty = config.wall_penalty;
+    world->max_steps = config.max_steps;
+    
+    // Validate reward values
+    if (!validate_reward_values(world)) {
+        fprintf(stderr, "Warning: Reward values may not promote optimal learning\n");
+    }
+    
+    printf("Created configured grid world: %dx%d, rewards: goal=%.1f, wall=%.1f, step=%.1f\n",
+           world->width, world->height, world->goal_reward, world->wall_penalty, world->step_penalty);
+    
+    return world;
+}
+
 // Reset the environment to its initial state
 void reset_environment(GridWorld* world) {
     if (!world) {
@@ -242,4 +279,83 @@ float calculate_reward(GridWorld* world, Position old_pos, Position new_pos, boo
 // Check if two positions are equal
 bool positions_equal(Position a, Position b) {
     return (a.x == b.x && a.y == b.y);
+}
+
+// Validate reward values for effective learning
+bool validate_reward_values(GridWorld* world) {
+    if (!world) {
+        return false;
+    }
+    
+    // Goal reward should be significantly positive
+    if (world->goal_reward <= 0) {
+        fprintf(stderr, "Warning: Goal reward (%.2f) should be positive\n", world->goal_reward);
+        return false;
+    }
+    
+    // Wall penalty should be negative but not too harsh compared to step penalty
+    if (world->wall_penalty >= 0) {
+        fprintf(stderr, "Warning: Wall penalty (%.2f) should be negative\n", world->wall_penalty);
+        return false;
+    }
+    
+    // Step penalty should be small and negative to encourage efficiency
+    if (world->step_penalty >= 0) {
+        fprintf(stderr, "Warning: Step penalty (%.2f) should be negative\n", world->step_penalty);
+        return false;
+    }
+    
+    // Goal reward should be much larger than step and wall penalties
+    if (world->goal_reward < -10 * world->step_penalty) {
+        fprintf(stderr, "Warning: Goal reward (%.2f) should be much larger than step penalty (%.2f)\n",
+                world->goal_reward, world->step_penalty);
+        return false;
+    }
+    
+    return true;
+}
+
+// Set reward values with validation
+bool set_reward_values(GridWorld* world, float goal_reward, float wall_penalty, float step_penalty) {
+    if (!world) {
+        fprintf(stderr, "Error: Cannot set reward values on NULL GridWorld\n");
+        return false;
+    }
+    
+    // Store old values for rollback if validation fails
+    float old_goal = world->goal_reward;
+    float old_wall = world->wall_penalty;
+    float old_step = world->step_penalty;
+    
+    // Set new values
+    world->goal_reward = goal_reward;
+    world->wall_penalty = wall_penalty;
+    world->step_penalty = step_penalty;
+    
+    // Validate new configuration
+    if (!validate_reward_values(world)) {
+        // Rollback on validation failure
+        world->goal_reward = old_goal;
+        world->wall_penalty = old_wall;
+        world->step_penalty = old_step;
+        fprintf(stderr, "Error: Invalid reward values, reverting to previous configuration\n");
+        return false;
+    }
+    
+    printf("Updated reward values: goal=%.1f, wall=%.1f, step=%.1f\n",
+           world->goal_reward, world->wall_penalty, world->step_penalty);
+    
+    return true;
+}
+
+// Get current reward configuration
+void get_reward_values(GridWorld* world, float* goal_reward, float* wall_penalty, float* step_penalty) {
+    if (!world || !goal_reward || !wall_penalty || !step_penalty) {
+        fprintf(stderr, "Error: Invalid parameters for get_reward_values\n");
+        return;
+    }
+    
+    *goal_reward = world->goal_reward;
+    *wall_penalty = world->wall_penalty;
+    *step_penalty = world->step_penalty;
 }

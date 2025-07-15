@@ -109,6 +109,11 @@ Position get_new_position(Position current, Action action);
 float calculate_reward(GridWorld* world, Position old_pos, Position new_pos, bool valid_move);
 float get_state_reward(GridWorld* world, Position pos);
 
+// Reward configuration and validation
+bool validate_reward_values(GridWorld* world);
+bool set_reward_values(GridWorld* world, float goal_reward, float wall_penalty, float step_penalty);
+void get_reward_values(GridWorld* world, float* goal_reward, float* wall_penalty, float* step_penalty);
+
 // Environment validation
 bool validate_environment(GridWorld* world);
 void print_environment_info(GridWorld* world);

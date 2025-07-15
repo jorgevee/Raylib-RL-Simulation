@@ -116,6 +116,28 @@ test: $(TARGET)
 	@echo "Running basic tests..."
 	@./$(TARGET) --test 2>/dev/null || echo "No test mode available yet"
 
+# Test reward system
+test-rewards:
+	@echo "Compiling reward system tests..."
+	@$(CC) $(CFLAGS) $(INCLUDES) -o test_reward_system test_reward_system.c $(SRC_DIR)/environment.c -lm
+	@echo "Running comprehensive reward system tests..."
+	@./test_reward_system
+	@echo "Cleaning test executable..."
+	@rm -f test_reward_system
+
+# Test environment functions  
+test-environment:
+	@echo "Compiling environment tests..."
+	@$(CC) $(CFLAGS) $(INCLUDES) -o test_environment_complete test_environment_complete.c $(SRC_DIR)/environment.c -lm
+	@echo "Running environment function tests..."
+	@./test_environment_complete
+	@echo "Cleaning test executable..."
+	@rm -f test_environment_complete
+
+# Run all tests
+test-all: test-environment test-rewards
+	@echo "All tests completed successfully!"
+
 # Package for distribution
 package: release
 	@echo "Creating distribution package..."
@@ -140,6 +162,9 @@ help:
 	@echo "  analyze      - Run static analysis with cppcheck"
 	@echo "  docs         - Generate documentation with doxygen"
 	@echo "  test         - Run basic tests"
+	@echo "  test-rewards - Test comprehensive reward system"
+	@echo "  test-environment - Test environment functions"
+	@echo "  test-all     - Run all test suites"
 	@echo "  package      - Create distribution package"
 	@echo "  help         - Show this help message"
 
@@ -154,4 +179,4 @@ $(BUILD_DIR)/utils.o: $(INCLUDE_DIR)/utils.h
 .PRECIOUS: $(BUILD_DIR)/%.o
 
 # Declare phony targets
-.PHONY: all directories clean rebuild run debug release install-raylib check-deps format analyze docs test package help
+.PHONY: all directories clean rebuild run debug release install-raylib check-deps format analyze docs test test-rewards test-environment test-all package help
