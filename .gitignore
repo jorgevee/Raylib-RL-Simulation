@@ -1,0 +1,36 @@
+# Raylib C RL Agent Project .gitignore
+
+# Build and binary output
+build/
+bin/
+*.o
+*.out
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Editor/OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Raylib generated files (if any)
+raylib_temp_*
+
+# Backup files
+*.bak
+
+# Test output
+*.test
+
+# Ignore Python cache if any scripts are used
+test_environment/__pycache__/
+
+# Ignore VSCode settings
+.vscode/

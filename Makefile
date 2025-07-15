@@ -4,8 +4,8 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -O2 -g
-INCLUDES = -Iinclude
-LIBS = -lraylib -lm
+INCLUDES = -Iinclude -I/opt/homebrew/opt/raylib/include
+LIBS = -L/opt/homebrew/opt/raylib/lib -lraylib -lm
 
 # Platform-specific settings
 UNAME_S := $(shell uname -s)

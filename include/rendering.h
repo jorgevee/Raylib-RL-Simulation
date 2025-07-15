@@ -90,12 +90,18 @@ void destroy_visualization(VisualizationState* vis);
 void update_visualization(VisualizationState* vis, GridWorld* world, QLearningAgent* agent, TrainingStats* stats);
 void render_frame(VisualizationState* vis, GridWorld* world, QLearningAgent* agent, TrainingStats* stats);
 
+// Basic graphics initialization and cleanup
+void init_graphics(int screen_width, int screen_height);
+void cleanup_graphics(void);
+VisualizationState* get_visualization_state(void);
+
 // Grid rendering functions
 void draw_grid_world(VisualizationState* vis, GridWorld* world);
 void draw_grid_lines(VisualizationState* vis, GridWorld* world);
 void draw_cell(VisualizationState* vis, int x, int y, CellType type);
 void draw_agent(VisualizationState* vis, Position pos);
 void draw_goal(VisualizationState* vis, Position pos);
+void draw_walls(VisualizationState* vis, GridWorld* world);
 
 // Q-value visualization
 void draw_q_values(VisualizationState* vis, GridWorld* world, QLearningAgent* agent);

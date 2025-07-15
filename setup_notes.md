@@ -57,22 +57,22 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
    } QLearningAgent;
    ```
 
-### Phase 3: Implement the Environment
+### Phase 3: Implement the Environment (Completed)
 
-3. **Create Environment Functions** 
+3. **Create Environment Functions** (Completed)
    - `GridWorld* create_grid_world(int width, int height)` (Completed)
-   - `void reset_environment(GridWorld* world)`
+   - `void reset_environment(GridWorld* world)` 
    - `int step(GridWorld* world, Action action, float* reward)`
    - `int get_state_index(GridWorld* world)` // Convert 2D position to 1D state
    - `bool is_terminal_state(GridWorld* world)`
    - `void destroy_grid_world(GridWorld* world)`
 
-4. **Define Reward Structure**
+4. **Define Reward Structure** (Completed)
    - Reaching goal: +100
    - Hitting wall: -10
    - Empty space: -1 (encourage finding shortest path)
 
-### Phase 4: Implement the RL Agent
+### Phase 4: Implement the RL Agent (Completed)
 
 5. **Create Q-Learning Agent**
    - `QLearningAgent* create_agent(int num_states, int num_actions)`
@@ -88,7 +88,7 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
 
 ### Phase 5: Create Visualization with Raylib
 
-7. **Set Up Rendering Functions**
+7. **Set Up Rendering Functions** (Completed)
    - `void init_graphics(int screen_width, int screen_height)`
    - `void draw_grid_world(GridWorld* world, int cell_size)`
    - `void draw_agent(Position pos, int cell_size)`
