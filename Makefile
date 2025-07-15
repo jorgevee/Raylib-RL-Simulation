@@ -134,8 +134,17 @@ test-environment:
 	@echo "Cleaning test executable..."
 	@rm -f test_environment_complete
 
+# Test step_environment function
+test-step-env:
+	@echo "Compiling step_environment tests..."
+	@$(CC) $(CFLAGS) $(INCLUDES) -o test_step_environment test_step_environment.c $(SRC_DIR)/environment.c -lm
+	@echo "Running step_environment function tests..."
+	@./test_step_environment
+	@echo "Cleaning test executable..."
+	@rm -f test_step_environment
+
 # Run all tests
-test-all: test-environment test-rewards
+test-all: test-environment test-step-env test-rewards
 	@echo "All tests completed successfully!"
 
 # Package for distribution
@@ -164,6 +173,7 @@ help:
 	@echo "  test         - Run basic tests"
 	@echo "  test-rewards - Test comprehensive reward system"
 	@echo "  test-environment - Test environment functions"
+	@echo "  test-step-env    - Test step_environment function"
 	@echo "  test-all     - Run all test suites"
 	@echo "  package      - Create distribution package"
 	@echo "  help         - Show this help message"
@@ -179,4 +189,4 @@ $(BUILD_DIR)/utils.o: $(INCLUDE_DIR)/utils.h
 .PRECIOUS: $(BUILD_DIR)/%.o
 
 # Declare phony targets
-.PHONY: all directories clean rebuild run debug release install-raylib check-deps format analyze docs test test-rewards test-environment test-all package help
+.PHONY: all directories clean rebuild run debug release install-raylib check-deps format analyze docs test test-rewards test-environment test-step-env test-all package help

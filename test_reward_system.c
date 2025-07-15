@@ -40,7 +40,7 @@ int main() {
     printf("\nTest 3: Testing wall penalty calculation...\n");
     reset_environment(world);
     Position boundary_pos = {0, 0};
-    Position invalid_pos = {-1, 0}; // Outside boundary
+    Position invalid_pos __attribute__((unused)) = {-1, 0}; // Outside boundary
     reward = calculate_reward(world, boundary_pos, boundary_pos, false);
     assert(float_equals(reward, -10.0f, 0.01f));
     printf("✓ Wall penalty calculation: %.1f\n", reward);

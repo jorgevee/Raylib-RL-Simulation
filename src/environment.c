@@ -218,6 +218,84 @@ int step(GridWorld* world, Action action, float* reward) {
     return get_state_index(world);
 }
 
+// Step environment with structured result (alternative interface)
+StepResult step_environment(GridWorld* world, Action action) {
+    StepResult result = {0};
+    
+    if (!world) {
+        fprintf(stderr, "Error: Cannot step NULL GridWorld\n");
+        result.next_state.state_index = -1;
+        result.next_state.is_valid = false;
+        result.reward = 0.0f;
+        result.done = true;
+        result.valid_action = false;
+        return result;
+    }
+    
+    if (world->episode_done) {
+        fprintf(stderr, "Warning: Episode already completed in step_environment\n");
+        result.next_state = get_current_state(world);
+        result.reward = 0.0f;
+        result.done = true;
+        result.valid_action = false;
+        return result;
+    }
+    
+    // Save current position
+    Position old_pos = world->agent_pos;
+    Position new_pos = old_pos;
+    
+    // Calculate new position based on action
+    switch (action) {
+        case ACTION_UP:
+            new_pos.y = old_pos.y - 1;
+            break;
+        case ACTION_DOWN:
+            new_pos.y = old_pos.y + 1;
+            break;
+        case ACTION_LEFT:
+            new_pos.x = old_pos.x - 1;
+            break;
+        case ACTION_RIGHT:
+            new_pos.x = old_pos.x + 1;
+            break;
+        default:
+            fprintf(stderr, "Warning: Invalid action %d in step_environment\n", action);
+            result.next_state = get_current_state(world);
+            result.reward = 0.0f;
+            result.done = world->episode_done;
+            result.valid_action = false;
+            return result;
+    }
+    
+    // Check if new position is valid and walkable
+    bool valid_move = is_valid_position(world, new_pos.x, new_pos.y) && 
+                      is_walkable(world, new_pos.x, new_pos.y);
+    
+    if (valid_move) {
+        // Move agent to new position
+        world->agent_pos = new_pos;
+    }
+    
+    // Calculate reward
+    result.reward = calculate_reward(world, old_pos, world->agent_pos, valid_move);
+    world->total_reward += result.reward;
+    
+    // Increment step counter
+    world->episode_steps++;
+    
+    // Check if episode is done
+    world->episode_done = is_terminal_state(world, world->agent_pos) || 
+                          (world->episode_steps >= world->max_steps);
+    
+    // Fill result structure
+    result.next_state = get_current_state(world);
+    result.done = world->episode_done;
+    result.valid_action = valid_move;
+    
+    return result;
+}
+
 // Destroy and free all memory associated with the grid world
 void destroy_grid_world(GridWorld* world) {
     if (!world) {
@@ -259,7 +337,7 @@ bool is_walkable(GridWorld* world, int x, int y) {
 }
 
 // Calculate reward based on the move
-float calculate_reward(GridWorld* world, Position old_pos, Position new_pos, bool valid_move) {
+float calculate_reward(GridWorld* world, Position old_pos __attribute__((unused)), Position new_pos, bool valid_move) {
     if (!world) return 0.0f;
     
     // If invalid move (hit wall), return wall penalty
@@ -279,6 +357,45 @@ float calculate_reward(GridWorld* world, Position old_pos, Position new_pos, boo
 // Check if two positions are equal
 bool positions_equal(Position a, Position b) {
     return (a.x == b.x && a.y == b.y);
+}
+
+// Convert position to state index
+int position_to_state(GridWorld* world, Position pos) {
+    if (!world || !is_valid_position(world, pos.x, pos.y)) {
+        return -1;
+    }
+    return pos.y * world->width + pos.x;
+}
+
+// Convert state index to position
+Position state_to_position(GridWorld* world, int state) {
+    Position pos = {-1, -1};
+    if (!world || state < 0 || state >= (world->width * world->height)) {
+        return pos;
+    }
+    pos.x = state % world->width;
+    pos.y = state / world->width;
+    return pos;
+}
+
+// Get current state information
+State get_current_state(GridWorld* world) {
+    State state = {0};
+    if (!world) {
+        state.state_index = -1;
+        state.position.x = -1;
+        state.position.y = -1;
+        state.is_terminal = true;
+        state.is_valid = false;
+        return state;
+    }
+    
+    state.position = world->agent_pos;
+    state.state_index = position_to_state(world, world->agent_pos);
+    state.is_terminal = is_terminal_state(world, world->agent_pos);
+    state.is_valid = is_valid_position(world, world->agent_pos.x, world->agent_pos.y);
+    
+    return state;
 }
 
 // Validate reward values for effective learning
