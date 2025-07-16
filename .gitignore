@@ -34,3 +34,31 @@ test_environment/__pycache__/
 
 # Ignore VSCode settings
 .vscode/
+
+# Ignore test build artifacts and debug symbols
+*.dSYM/
+test_priority_replay.dSYM/
+test_qtable_optimization.dSYM/
+
+# Compiled test binaries
+test_agent
+test_environment
+test_qtable_optimization
+test_performance_metrics
+
+# Compiled demo binaries
+demo_integration
+training_demo
+
+# Runtime generated data files
+*.dat
+qtable.dat
+learned_policy.txt
+performance_data.csv
+test_performance_data.csv
+
+# Shell scripts that might be generated
+folder_setup.sh
+
+# Documentation build output (but keep source markdown)
+docs/

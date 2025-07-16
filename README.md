@@ -1,428 +1,266 @@
-# Reinforcement Learning Agent Environment with Raylib
+# Reinforcement Learning Grid World Simulation
 
-A comprehensive C implementation of a reinforcement learning environment using Q-Learning algorithms with real-time visualization powered by Raylib.
+A high-performance C implementation of Q-learning reinforcement learning algorithms with real-time visualization using Raylib. This project demonstrates advanced RL techniques including experience replay, state visit prioritization, and optimized Q-table operations for efficient training in grid-world environments.
 
-## Project Overview
+![Training Demo](rl-sim-viz1.png)
 
-This project provides a complete framework for creating and training reinforcement learning agents in grid-world environments. The modular architecture separates core RL logic from visualization, making it easy to extend and modify for different scenarios.
+## Overview
 
-## Core Data Structures
+This simulation implements a comprehensive Q-learning agent that learns to navigate a 10x10 grid world from start position (1,1) to goal position (8,8) while avoiding walls and obstacles. The project features real-time visualization, interactive training controls, and advanced optimization techniques for enhanced learning performance.
 
-### Agent System (`include/agent.h`)
+## Core Features
 
-#### Action Enumeration
-```c
-typedef enum {
-    ACTION_UP = 0,
-    ACTION_DOWN = 1,
-    ACTION_LEFT = 2,
-    ACTION_RIGHT = 3,
-    NUM_ACTIONS = 4
-} Action;
-```
+### Reinforcement Learning Engine
+* **Q-Learning Algorithm**: Classical temporal difference learning with configurable hyperparameters
+* **Epsilon-Greedy Policy**: Balanced exploration-exploitation strategy with adaptive decay
+* **Experience Replay Buffer**: Improves sample efficiency and training stability
+* **State Visit Prioritization**: Prioritizes exploration of less-visited states
+* **Optimized Q-Table Operations**: SIMD-accelerated operations for faster convergence
 
-#### Q-Learning Agent
-```c
-typedef struct {
-    float** q_table;        // Q(state, action) values
-    int num_states;         // Total number of states
-    int num_actions;        // Total number of actions
-    float learning_rate;    // Alpha (α)
-    float discount_factor;  // Gamma (γ)
-    float epsilon;          // Exploration rate
-    float epsilon_decay;    // Epsilon decay rate
-    float epsilon_min;      // Minimum epsilon value
-    int current_state;      // Current state index
-    Action last_action;     // Last action taken
-} QLearningAgent;
-```
+### Interactive Visualization
+* **Real-Time Training Display**: Live visualization of agent learning process
+* **Q-Value Heat Maps**: Visual representation of learned state values
+* **Agent Path Tracking**: Trail visualization showing exploration patterns
+* **Training Metrics**: Live statistics including reward, epsilon, and convergence metrics
+* **Multiple Color Schemes**: Customizable visual themes for better clarity
 
-#### Experience Replay
-```c
-typedef struct {
-    int state;
-    Action action;
-    float reward;
-    int next_state;
-    bool done;
-} Experience;
+### Advanced Optimizations
+* **Experience Replay Buffer**: Stores and replays past experiences to improve learning stability
+* **Priority State Visits**: Tracks state visitation frequency to encourage exploration
+* **Q-Table Access Optimization**: Optimized memory access patterns and SIMD operations for faster training
+* **Performance Monitoring**: Comprehensive metrics tracking for analysis and debugging
 
-typedef struct {
-    Experience* experiences;
-    int capacity;
-    int size;
-    int current_index;
-} ExperienceBuffer;
-```
+## Performance Results
 
-### Environment System (`include/environment.h`)
+The following graph shows training performance over 500 episodes, demonstrating convergence to optimal policy:
 
-#### Grid World Structure
-```c
-typedef struct {
-    int width, height;          // Grid dimensions
-    CellType** grid;           // 2D grid of cell types
-    Position agent_pos;        // Current agent position
-    Position goal_pos;         // Goal position
-    Position start_pos;        // Starting position
-    int episode_steps;         // Steps taken in current episode
-    bool episode_done;         // Whether episode is finished
-    float total_reward;        // Total reward accumulated this episode
-    int max_steps;             // Maximum steps per episode
-    float step_penalty;        // Penalty for each step (-1.0 typical)
-    float goal_reward;         // Reward for reaching goal (+100.0 typical)
-    float wall_penalty;        // Penalty for hitting wall (-10.0 typical)
-} GridWorld;
-```
+![Training Performance](rl-m.png)
 
-#### Comprehensive Reward Structure
+*The graph displays reward progression, success rate, and epsilon decay over training episodes using the `performance_data.csv` dataset.*
 
-The environment implements a carefully designed reward system to encourage optimal pathfinding:
-
-- **Goal Reached**: `+100` points - Large positive reward for task completion
-- **Wall Collision**: `-10` points - Moderate penalty for invalid moves  
-- **Empty Space Movement**: `-1` point - Small penalty encouraging efficiency
-
-The reward values are fully configurable and include validation to ensure effective learning. See `REWARD_DESIGN.md` for detailed design rationale.
-
-#### Cell Types
-```c
-typedef enum {
-    CELL_EMPTY = 0,
-    CELL_WALL = 1,
-    CELL_GOAL = 2,
-    CELL_AGENT = 3,
-    CELL_OBSTACLE = 4,
-    CELL_START = 5
-} CellType;
-```
-
-#### State Representation
-```c
-typedef struct {
-    int state_index;           // 1D state representation
-    Position position;         // 2D position representation
-    bool is_terminal;          // Whether this is a terminal state
-    bool is_valid;             // Whether this state is valid
-} State;
-```
-
-### Visualization System (`include/rendering.h`)
-
-#### Rendering Configuration
-```c
-typedef struct {
-    int cell_size;              // Size of each grid cell in pixels
-    int screen_width;           // Screen width
-    int screen_height;          // Screen height
-    bool show_q_values;         // Whether to display Q-values
-    bool show_grid;             // Whether to show grid lines
-    bool show_agent_trail;      // Whether to show agent's path
-    bool show_statistics;       // Whether to show training stats
-    float animation_speed;      // Speed of animations (0.0-1.0)
-    int fps_target;             // Target FPS
-    bool vsync_enabled;         // Whether VSync is enabled
-} RenderConfig;
-```
-
-#### Color Scheme
-```c
-typedef struct {
-    Color empty_cell;           // Color for empty cells
-    Color wall_cell;            // Color for walls
-    Color goal_cell;            // Color for goal
-    Color agent_color;          // Color for agent
-    Color obstacle_color;       // Color for obstacles
-    Color start_cell;           // Color for start position
-    Color grid_lines;           // Color for grid lines
-    Color text_color;           // Color for text
-    Color background;           // Background color
-    Color q_value_positive;     // Color for positive Q-values
-    Color q_value_negative;     // Color for negative Q-values
-    Color trail_color;          // Color for agent trail
-} ColorScheme;
-```
-
-### Utility System (`include/utils.h`)
-
-#### Random Number Generation
-```c
-typedef struct {
-    unsigned int seed;
-    bool initialized;
-} RandomState;
-```
-
-#### Performance Monitoring
-```c
-typedef struct {
-    clock_t start_time;
-    clock_t end_time;
-    double elapsed_seconds;
-    bool is_running;
-} Timer;
-```
-
-#### Configuration Management
-```c
-typedef struct {
-    char key[64];
-    char value[256];
-} ConfigPair;
-
-typedef struct {
-    ConfigPair* pairs;
-    int count;
-    int capacity;
-} ConfigFile;
-```
-
-## Project Structure
-
-```
-c_raylib_simulation/
-├── include/                    # Header files
-│   ├── agent.h                # RL agent structures and functions
-│   ├── environment.h          # Grid world environment
-│   ├── rendering.h            # Raylib visualization
-│   └── utils.h                # Utility functions and helpers
-├── src/                       # Source files
-│   ├── main.c                 # Main application entry point
-│   ├── agent.c                # Q-learning implementation
-│   ├── environment.c          # Grid world logic
-│   ├── rendering.c            # Visualization implementation
-│   └── utils.c                # Utility function implementations
-├── build/                     # Compiled object files (created during build)
-├── bin/                       # Final executable (created during build)
-├── Makefile                   # Build configuration
-├── README.md                  # This file
-└── claude_notes.md           # Development notes and plans
-```
-
-## Building the Project
+## Installation
 
 ### Prerequisites
 
-1. **C Compiler**: GCC or Clang
-2. **Raylib**: Graphics library for visualization
-3. **Make**: Build system
+* **C Compiler**: GCC or Clang with C99 support
+* **Raylib**: Graphics library for visualization
+* **Make**: Build system
 
-### Installation
+### Setup
 
-#### macOS (with Homebrew)
+**macOS (Homebrew):**
 ```bash
-# Install dependencies
 brew install raylib gcc make
-
-# Build project
+git clone https://github.com/jorgevee/Raylib-RL-Simulation.git
+cd Raylib-RL-Simulation
 make all
 ```
 
-#### Linux (Ubuntu/Debian)
+**Linux (Ubuntu/Debian):**
 ```bash
-# Install dependencies
 sudo apt-get update
 sudo apt-get install build-essential libraylib-dev
-
-# Build project
-make all
-```
-
-#### Windows (MinGW)
-```bash
-# Install raylib manually or use vcpkg
-# Then build with:
+git clone https://github.com/jorgevee/Raylib-RL-Simulation.git
+cd Raylib-RL-Simulation
 make all
 ```
 
 ### Build Commands
 
 ```bash
-# Basic build
-make all
-
-# Debug build with symbols
-make debug
-
-# Optimized release build
-make release
-
-# Clean build artifacts
-make clean
-
-# Build and run
-make run
-
-# Check dependencies
-make check-deps
-
-# Show all available commands
-make help
+make all           # Standard build
+make debug         # Debug build with symbols
+make release       # Optimized release build
+make clean         # Clean build artifacts
+make test-all      # Run comprehensive test suite
 ```
 
-## Key Features
+## Usage
 
-### Reinforcement Learning
-- **Q-Learning Algorithm**: Classic temporal difference learning
-- **Epsilon-Greedy Policy**: Balanced exploration and exploitation
-- **Experience Replay**: Optional experience buffer for improved learning
-- **Configurable Parameters**: Learning rate, discount factor, exploration rate
+### Basic Training
 
-### Environment
-- **Grid World**: Customizable 2D grid environments
-- **Multiple Cell Types**: Empty, walls, goals, obstacles, start positions
-- **Reward System**: Configurable rewards and penalties
-- **State Management**: Automatic state indexing and conversion
-- **Maze Generation**: Built-in maze generation algorithms
+```bash
+# Standard training session
+./bin/rl_agent --episodes 500
 
-### Visualization
-- **Real-time Rendering**: Live visualization of agent training
-- **Q-value Display**: Heat maps and arrow visualization of Q-values
-- **Agent Trail**: Visual trail of agent movement
-- **Statistics Panel**: Real-time training metrics
-- **Interactive Controls**: Pause, reset, speed control
-- **Multiple Color Schemes**: Customizable visual themes
+# Quick evaluation run
+./bin/rl_agent --episodes 100 --max-steps 200
+```
 
-### Utilities
-- **Memory Management**: Safe allocation and tracking
-- **Configuration Files**: Load/save settings
-- **Performance Monitoring**: Timing and profiling tools
-- **Logging System**: Comprehensive logging with levels
-- **Data Export**: CSV and JSON export for analysis
+### Interactive Training with Visualization
 
-## Usage Example
+```bash
+# Full interactive experience
+./bin/rl_agent --visualize --episodes 1000
+
+# Custom training configuration
+./bin/rl_agent --visualize --episodes 500 --max-steps 300 --policy-file my_policy.txt
+```
+
+### Command Line Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--episodes N` | Number of training episodes | 1000 |
+| `--max-steps N` | Maximum steps per episode | 200 |
+| `--visualize` | Enable real-time visualization | disabled |
+| `--policy-file FILE` | Policy save filename | learned_policy.txt |
+| `--no-save` | Disable automatic policy saving | false |
+| `--quiet` | Suppress training output | false |
+
+## Interactive Controls (with --visualize)
+
+| Key | Function | Description |
+|-----|----------|-------------|
+| **SPACE** | Pause/Resume | Toggle training execution |
+| **R** | Reset | Complete training restart with fresh Q-table |
+| **V** | Q-values | Toggle Q-value visualization overlay |
+| **+/-** | Speed Control | Adjust training speed (0.1x to 10x) |
+| **S/L** | Save/Load | Save or load Q-table state |
+| **ESC** | Exit | Terminate training session |
+
+### Example Interactive Session
+
+```bash
+# Start interactive training
+./bin/rl_agent --visualize --episodes 500
+
+# During training:
+# Press SPACE to pause and observe learned Q-values
+# Press V to toggle Q-value heat map visualization  
+# Press + to accelerate training, - to slow down
+# Press S to save progress, L to load previous session
+# Press R for complete reset, ESC to exit
+```
+
+## Example Commands
+
+```bash
+# Basic training
+./bin/rl_agent --episodes 500
+
+# Interactive training with visualization
+./bin/rl_agent --visualize --episodes 1000
+
+# Custom configuration
+./bin/rl_agent --visualize --episodes 500 --max-steps 300 --policy-file my_policy.txt
+```
+
+The agent will train a Q-learning algorithm to navigate a 10x10 grid world from start (1,1) to goal (8,8), avoiding walls. Training progress and learned policy will be saved automatically.
+
+## Technical Architecture
+
+### Core Components
+
+**Agent System (`src/agent.c`)**
+* Q-learning implementation with configurable hyperparameters
+* Experience replay buffer for improved sample efficiency
+* Epsilon-greedy action selection with adaptive decay
+* State-action value function approximation
+
+**Environment System (`src/environment.c`)**
+* Grid world implementation with customizable layouts
+* Reward system: +100 (goal), -10 (wall), -1 (step)
+* State space management and transition dynamics
+* Episode management with configurable termination conditions
+
+**Visualization System (`src/rendering.c`)**
+* Real-time Raylib-based rendering engine
+* Q-value heat map visualization
+* Interactive control system
+* Performance metrics display
+
+**Optimization Layer (`src/q_table_optimized.c`)**
+* SIMD-accelerated Q-table operations
+* Optimized memory access patterns
+* Experience replay buffer management
+* State visit frequency tracking
+
+### Memory Management
+
+The system employs careful memory management with automatic cleanup:
 
 ```c
-#include "agent.h"
-#include "environment.h"
-#include "rendering.h"
-
-int main() {
-    // Create environment
-    GridWorld* world = create_grid_world(10, 10);
-    
-    // Create agent
-    QLearningAgent* agent = create_agent(
-        world->width * world->height,  // num_states
-        NUM_ACTIONS,                   // num_actions
-        0.1f,                         // learning_rate
-        0.95f,                        // discount_factor
-        1.0f                          // epsilon
-    );
-    
-    // Initialize visualization
-    VisualizationState* vis = init_visualization(800, 600, 40);
-    
-    // Training loop
-    for (int episode = 0; episode < 1000; episode++) {
-        reset_environment(world);
-        
-        while (!world->episode_done) {
-            int state = position_to_state(world, world->agent_pos);
-            Action action = select_action(agent, state);
-            StepResult result = step_environment(world, action);
-            
-            update_q_value(agent, state, action, result.reward, 
-                          result.next_state.state_index, result.done);
-            
-            // Render frame
-            render_frame(vis, world, agent, NULL);
-        }
-        
-        decay_epsilon(agent);
-    }
-    
-    // Cleanup
-    destroy_agent(agent);
-    destroy_grid_world(world);
-    destroy_visualization(vis);
-    
-    return 0;
-}
+// Automatic resource management
+QLearningAgent* agent = create_agent(num_states, num_actions, 0.1f, 0.95f, 1.0f);
+GridWorld* world = create_grid_world(10, 10);
+// ... training logic
+destroy_agent(agent);
+destroy_grid_world(world);
 ```
 
-## Configuration
+### Performance Optimizations
 
-The system supports configuration files for easy parameter tuning:
+1. **Experience Replay Buffer**: Stores past experiences for batch learning updates
+2. **State Visit Prioritization**: Encourages exploration of under-visited states  
+3. **Q-Table Access Optimization**: SIMD operations and cache-friendly memory patterns
+4. **Vectorized Operations**: Batch processing of Q-value updates for faster convergence
 
-```ini
-# config.ini
-[environment]
-width=15
-height=15
-goal_reward=100.0
-step_penalty=-1.0
-wall_penalty=-10.0
-max_steps=300
+## Training Performance
 
-[agent]
-learning_rate=0.1
-discount_factor=0.95
-epsilon=1.0
-epsilon_decay=0.995
-epsilon_min=0.01
+The simulation tracks comprehensive metrics during training:
 
-[rendering]
-cell_size=30
-show_q_values=true
-show_trail=true
-animation_speed=0.5
+* **Episode Rewards**: Cumulative reward per episode
+* **Success Rate**: Percentage of episodes reaching the goal
+* **Step Efficiency**: Average steps to goal completion
+* **Q-Value Variance**: Measure of policy convergence
+* **Exploration Rate**: Epsilon decay over time
+
+Performance data is automatically saved to `performance_data.csv` and `test_performance_data.csv` for analysis.
+
+## Project Structure
+
 ```
-
-### Reward Configuration
-
-The reward system supports both static and dynamic configuration:
-
-```c
-// Static configuration at creation
-EnvironmentConfig config = {
-    .width = 15, .height = 15,
-    .goal_reward = 150.0f,
-    .wall_penalty = -15.0f,
-    .step_penalty = -0.5f,
-    .max_steps = 300
-};
-GridWorld* world = create_grid_world_from_config(config);
-
-// Dynamic configuration during runtime
-set_reward_values(world, 200.0f, -20.0f, -2.0f);
+c_raylib_simulation/
+├── src/                       # Source implementation
+│   ├── main.c                # Application entry point
+│   ├── agent.c               # Q-learning agent implementation  
+│   ├── environment.c         # Grid world environment
+│   ├── rendering.c           # Raylib visualization
+│   ├── q_table_optimized.c   # Optimized Q-table operations
+│   └── utils.c               # Utility functions
+├── include/                   # Header files
+│   ├── agent.h               # Agent structures and APIs
+│   ├── environment.h         # Environment definitions
+│   ├── rendering.h           # Visualization interfaces
+│   ├── q_table_optimized.h   # Optimization headers
+│   └── utils.h               # Utility declarations
+├── tests/                     # Comprehensive test suite
+├── bin/                       # Compiled executables
+├── build/                     # Build artifacts
+├── Makefile                   # Build configuration
+└── README.md                  # This documentation
 ```
-
-## Performance Considerations
-
-- **Memory Usage**: Q-table size scales as O(states × actions)
-- **Rendering**: Can be disabled for faster training
-- **Experience Replay**: Optional for memory-efficient training
-- **State Representation**: Efficient 1D indexing of 2D positions
-
-## Extension Points
-
-The modular design allows easy extension:
-
-1. **New Algorithms**: Implement SARSA, Deep Q-Learning, etc.
-2. **Different Environments**: Continuous spaces, multi-agent, etc.
-3. **Enhanced Visualization**: 3D rendering, web interface, etc.
-4. **Advanced Features**: Neural networks, policy gradients, etc.
 
 ## Contributing
 
-1. Follow the existing code structure and naming conventions
-2. Add appropriate documentation for new features
-3. Update this README when adding new data structures
-4. Test thoroughly before submitting changes
+Contributions are welcome! Please follow these guidelines:
+
+1. **Code Style**: Follow existing naming conventions and formatting
+2. **Testing**: Add tests for new features using the test framework
+3. **Documentation**: Update relevant documentation and comments
+4. **Performance**: Maintain or improve existing performance characteristics
+
+### Development Workflow
+
+```bash
+# Development build with debugging
+make debug
+
+# Run comprehensive test suite  
+make test-all
+
+# Static analysis
+make analyze
+
+# Code formatting
+make format
+```
 
 ## License
 
-This project is provided as-is for educational and research purposes.
+This project is provided for educational and research purposes. See the individual source files for specific licensing information.
 
-## Next Steps
+## Acknowledgments
 
-Based on the comprehensive data structures defined, the next development phases would be:
-
-1. **Implement Core Functions**: Fill in the function implementations
-2. **Basic Training Loop**: Create a simple training scenario
-3. **Visualization Integration**: Connect Raylib rendering
-4. **Testing and Debugging**: Validate the Q-learning implementation
-5. **Advanced Features**: Add experience replay, neural networks, etc.
-
-The foundation is now in place for a robust and extensible RL environment!
+Built with [Raylib](https://www.raylib.com/) graphics library for cross-platform visualization support.

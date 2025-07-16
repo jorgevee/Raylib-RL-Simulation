@@ -136,16 +136,43 @@ test-environment:
 
 # Test step_environment function
 test-step-env:
-	@echo "Compiling step_environment tests..."
-	@$(CC) $(CFLAGS) $(INCLUDES) -o test_step_environment test_step_environment.c $(SRC_DIR)/environment.c -lm
-	@echo "Running step_environment function tests..."
-	@./test_step_environment
-	@echo "Cleaning test executable..."
-	@rm -f test_step_environment
+@echo "Compiling step_environment tests..."
+@$(CC) $(CFLAGS) $(INCLUDES) -o test_step_environment test_step_environment.c $(SRC_DIR)/environment.c -lm
+@echo "Running step_environment function tests..."
+@./test_step_environment
+@echo "Cleaning test executable..."
+@rm -f test_step_environment
+
+# Test priority experience replay
+test-priority-replay:
+@echo "Compiling priority experience replay tests..."
+@$(CC) $(CFLAGS) $(INCLUDES) -o test_priority_replay tests/test_priority_replay.c $(SRC_DIR)/agent.c $(SRC_DIR)/environment.c -lm
+@echo "Running priority experience replay tests..."
+@./test_priority_replay
+@echo "Cleaning test executable..."
+@rm -f test_priority_replay
+
+# Test state visit tracking
+test-state-visit-tracking:
+@echo "Compiling state visit tracking tests..."
+@$(CC) $(CFLAGS) $(INCLUDES) -o test_state_visit_tracking tests/test_state_visit_tracking.c $(SRC_DIR)/agent.c $(SRC_DIR)/environment.c -lm
+@echo "Running state visit tracking tests..."
+@./test_state_visit_tracking
+@echo "Cleaning test executable..."
+@rm -f test_state_visit_tracking
+
+# Test Q-table optimization
+test-qtable-optimization:
+@echo "Compiling Q-table optimization tests..."
+@$(CC) $(CFLAGS) $(INCLUDES) -mavx2 -msse2 -o test_qtable_optimization tests/test_qtable_optimization.c $(SRC_DIR)/q_table_optimized.c $(SRC_DIR)/agent.c $(SRC_DIR)/environment.c -lm
+@echo "Running Q-table optimization tests..."
+@./test_qtable_optimization
+@echo "Cleaning test executable..."
+@rm -f test_qtable_optimization
 
 # Run all tests
-test-all: test-environment test-step-env test-rewards
-	@echo "All tests completed successfully!"
+test-all: test-environment test-step-env test-rewards test-priority-replay test-state-visit-tracking test-qtable-optimization
+@echo "All tests completed successfully!"
 
 # Package for distribution
 package: release
@@ -171,10 +198,11 @@ help:
 	@echo "  analyze      - Run static analysis with cppcheck"
 	@echo "  docs         - Generate documentation with doxygen"
 	@echo "  test         - Run basic tests"
-	@echo "  test-rewards - Test comprehensive reward system"
-	@echo "  test-environment - Test environment functions"
-	@echo "  test-step-env    - Test step_environment function"
-	@echo "  test-all     - Run all test suites"
+@echo "  test-rewards - Test comprehensive reward system"
+@echo "  test-environment - Test environment functions"
+@echo "  test-step-env    - Test step_environment function"
+@echo "  test-qtable-optimization - Test Q-table optimization features"
+@echo "  test-all     - Run all test suites"
 	@echo "  package      - Create distribution package"
 	@echo "  help         - Show this help message"
 
@@ -184,9 +212,10 @@ $(BUILD_DIR)/agent.o: $(INCLUDE_DIR)/agent.h $(INCLUDE_DIR)/utils.h
 $(BUILD_DIR)/environment.o: $(INCLUDE_DIR)/environment.h $(INCLUDE_DIR)/agent.h $(INCLUDE_DIR)/utils.h
 $(BUILD_DIR)/rendering.o: $(INCLUDE_DIR)/rendering.h $(INCLUDE_DIR)/environment.h $(INCLUDE_DIR)/agent.h $(INCLUDE_DIR)/utils.h
 $(BUILD_DIR)/utils.o: $(INCLUDE_DIR)/utils.h
+$(BUILD_DIR)/q_table_optimized.o: $(INCLUDE_DIR)/q_table_optimized.h
 
 # Prevent make from deleting intermediate files
 .PRECIOUS: $(BUILD_DIR)/%.o
 
 # Declare phony targets
-.PHONY: all directories clean rebuild run debug release install-raylib check-deps format analyze docs test test-rewards test-environment test-step-env test-all package help
+.PHONY: all directories clean rebuild run debug release install-raylib check-deps format analyze docs test test-rewards test-environment test-step-env test-qtable-optimization test-all package help

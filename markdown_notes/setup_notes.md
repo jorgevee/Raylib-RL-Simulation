@@ -96,13 +96,13 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
    - `void draw_walls(GridWorld* world, int cell_size)`
    - `void draw_q_values(QLearningAgent* agent, GridWorld* world, int cell_size)`
 
-8. **Add Visual Debugging Features**
+8. **Add Visual Debugging Features** (not Completed)
    - Show Q-values as heat map or arrows
    - Display current episode and total reward
    - Show agent's chosen action
    - Visualize exploration vs exploitation
 
-### Phase 6: Implement Training Loop
+### Phase 6: Implement Training Loop (Completed)
 
 9. **Create Main Training Structure**
    ```c
@@ -121,7 +121,7 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
 
 ### Phase 7: Add Control and Monitoring
 
-10. **Implement User Controls**
+10. **Implement User Controls** (Completed)
     - Space: Pause/Resume training
     - R: Reset and restart
     - V: Toggle Q-value visualization
@@ -129,7 +129,7 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
     - S: Save current Q-table
     - L: Load saved Q-table
 
-11. **Add Performance Metrics**
+11. **Add Performance Metrics** (Completed)
     - Track average reward per episode
     - Count steps to reach goal
     - Display learning curves
@@ -138,9 +138,9 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
 ### Phase 8: Optimize and Extend
 
 12. **Performance Improvements**
-    - Implement experience replay buffer
-    - Add priority to state visits
-    - Optimize Q-table access patterns
+    - Implement experience replay buffer (Completed)
+    - Add priority to state visits (completed)
+    - Optimize Q-table access patterns (Completed)
     - Add multi-threading for batch updates
 
 13. **Environment Extensions**

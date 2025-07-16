@@ -18,6 +18,18 @@ typedef struct {
     const char* policy_filename;
 } TrainingConfig;
 
+// Training control state
+typedef struct {
+    bool is_paused;
+    bool should_reset;
+    bool should_exit;
+    bool show_q_values;
+    float training_speed;
+    bool save_requested;
+    bool load_requested;
+    const char* qtable_filename;
+} TrainingControl;
+
 // Function to save learned policy to file
 void save_policy_to_file(QLearningAgent* agent, GridWorld* world, const char* filename) {
     FILE* file = fopen(filename, "w");
@@ -71,12 +83,115 @@ float calculate_avg_q_value(QLearningAgent* agent, int state) {
     return sum / agent->num_actions;
 }
 
-// Main training function
+// Initialize training control state
+TrainingControl create_training_control() {
+    TrainingControl control = {
+        .is_paused = false,
+        .should_reset = false,
+        .should_exit = false,
+        .show_q_values = false,
+        .training_speed = 1.0f,
+        .save_requested = false,
+        .load_requested = false,
+        .qtable_filename = "qtable.dat"
+    };
+    return control;
+}
+
+// Handle user input for training controls
+void handle_training_input(TrainingControl* control, VisualizationState* vis_state) {
+    // Space: Pause/Resume training
+    if (IsKeyPressed(KEY_SPACE)) {
+        control->is_paused = !control->is_paused;
+        printf("Training %s\n", control->is_paused ? "PAUSED" : "RESUMED");
+    }
+    
+    // R: Reset and restart
+    if (IsKeyPressed(KEY_R)) {
+        control->should_reset = true;
+        printf("Training RESET requested\n");
+    }
+    
+    // V: Toggle Q-value visualization
+    if (IsKeyPressed(KEY_V)) {
+        control->show_q_values = !control->show_q_values;
+        if (vis_state) {
+            vis_state->config.show_q_values = control->show_q_values;
+        }
+        printf("Q-value visualization: %s\n", control->show_q_values ? "ON" : "OFF");
+    }
+    
+    // +: Increase training speed
+    if (IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) {
+        control->training_speed = fminf(control->training_speed * 1.5f, 10.0f);
+        printf("Training speed: %.1fx\n", control->training_speed);
+    }
+    
+    // -: Decrease training speed
+    if (IsKeyPressed(KEY_MINUS) || IsKeyPressed(KEY_KP_SUBTRACT)) {
+        control->training_speed = fmaxf(control->training_speed / 1.5f, 0.1f);
+        printf("Training speed: %.1fx\n", control->training_speed);
+    }
+    
+    // S: Save current Q-table
+    if (IsKeyPressed(KEY_S)) {
+        control->save_requested = true;
+        printf("Q-table save requested\n");
+    }
+    
+    // L: Load saved Q-table
+    if (IsKeyPressed(KEY_L)) {
+        control->load_requested = true;
+        printf("Q-table load requested\n");
+    }
+    
+    // ESC: Exit training
+    if (IsKeyPressed(KEY_ESCAPE) || WindowShouldClose()) {
+        control->should_exit = true;
+        printf("Training exit requested\n");
+    }
+    
+    // Additional visualization controls
+    if (IsKeyPressed(KEY_Q) && vis_state) {
+        vis_state->config.show_q_values = !vis_state->config.show_q_values;
+        control->show_q_values = vis_state->config.show_q_values;
+    }
+    
+    if (IsKeyPressed(KEY_G) && vis_state) {
+        vis_state->config.show_grid = !vis_state->config.show_grid;
+    }
+}
+
+// Display control instructions
+void display_control_instructions() {
+    printf("\n=== Training Controls ===\n");
+    printf("SPACE   : Pause/Resume training\n");
+    printf("R       : Reset and restart training\n");
+    printf("V       : Toggle Q-value visualization\n");
+    printf("+/=     : Increase training speed\n");
+    printf("-       : Decrease training speed\n");
+    printf("S       : Save current Q-table\n");
+    printf("L       : Load saved Q-table\n");
+    printf("Q       : Toggle Q-value display\n");
+    printf("G       : Toggle grid lines\n");
+    printf("ESC     : Exit training\n");
+    printf("========================\n\n");
+}
+
+// Main training function with enhanced controls
 void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* config) {
-    printf("Starting Q-Learning Training...\n");
+    printf("Starting Q-Learning Training with Enhanced Controls...\n");
     printf("Episodes: %d, Max steps per episode: %d\n", 
            config->num_episodes, config->max_steps_per_episode);
     printf("Visualization: %s\n", config->enable_visualization ? "ON" : "OFF");
+    
+    // Display control instructions
+    if (config->enable_visualization) {
+        display_control_instructions();
+    }
+    
+    // Initialize training control
+    TrainingControl control = create_training_control();
     
     // Initialize training statistics
     TrainingStats* stats = create_training_stats(config->num_episodes);
@@ -94,19 +209,37 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
         
         init_graphics(SCREEN_WIDTH, SCREEN_HEIGHT);
         vis_state = get_visualization_state();
-        
-        printf("Visualization enabled. Controls:\n");
-        printf("  Q - Toggle Q-value visualization\n");
-        printf("  G - Toggle grid lines\n");
-        printf("  P - Pause/Resume training\n");
-        printf("  ESC - Exit training\n");
     }
     
-    bool training_paused = false;
     clock_t start_time = clock();
+    int episode = 0;
     
     // Main training loop
-    for (int episode = 0; episode < config->num_episodes; episode++) {
+    while (episode < config->num_episodes && !control.should_exit) {
+        // Handle reset request
+        if (control.should_reset) {
+            printf("Resetting training...\n");
+            episode = 0;
+            
+            // Reset agent (clear Q-table)
+            for (int s = 0; s < agent->num_states; s++) {
+                for (int a = 0; a < agent->num_actions; a++) {
+                    agent->q_table[s][a] = 0.0f;
+                }
+            }
+            
+            // Reset epsilon
+            agent->epsilon = 1.0f;
+            
+            // Clear statistics
+            destroy_training_stats(stats);
+            stats = create_training_stats(config->num_episodes);
+            
+            control.should_reset = false;
+            start_time = clock();
+            printf("Training reset complete!\n");
+        }
+        
         // Reset environment for new episode
         reset_environment(world);
         
@@ -116,33 +249,39 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
         int q_value_count = 0;
         
         // Episode loop
-        while (!world->episode_done && steps_taken < config->max_steps_per_episode) {
-            // Handle visualization input
+        while (!world->episode_done && steps_taken < config->max_steps_per_episode && !control.should_exit) {
+            // Handle user input
             if (config->enable_visualization) {
-                if (WindowShouldClose()) {
+                handle_training_input(&control, vis_state);
+                
+                // Handle save request
+                if (control.save_requested) {
+                    if (save_q_table(agent, control.qtable_filename)) {
+                        printf("Q-table saved successfully!\n");
+                    }
+                    control.save_requested = false;
+                }
+                
+                // Handle load request
+                if (control.load_requested) {
+                    if (load_q_table(agent, control.qtable_filename)) {
+                        printf("Q-table loaded successfully!\n");
+                    }
+                    control.load_requested = false;
+                }
+                
+                // Handle exit request
+                if (control.should_exit) {
                     printf("Training interrupted by user\n");
                     goto training_cleanup;
                 }
                 
-                if (IsKeyPressed(KEY_P)) {
-                    training_paused = !training_paused;
-                    printf("Training %s\n", training_paused ? "PAUSED" : "RESUMED");
-                }
-                
-                if (IsKeyPressed(KEY_Q) && vis_state) {
-                    vis_state->config.show_q_values = !vis_state->config.show_q_values;
-                }
-                
-                if (IsKeyPressed(KEY_G) && vis_state) {
-                    vis_state->config.show_grid = !vis_state->config.show_grid;
-                }
-                
-                if (training_paused) {
-                    // Still render while paused
+                // Skip training step if paused, but continue rendering
+                if (control.is_paused) {
                     BeginDrawing();
                     ClearBackground(RAYWHITE);
                     
-                    if (vis_state->config.show_q_values) {
+                    if (control.show_q_values) {
                         draw_q_values(vis_state, world, agent);
                     } else {
                         draw_grid_world(vis_state, world);
@@ -152,9 +291,18 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
                     draw_goal(vis_state, world->goal_pos);
                     draw_agent(vis_state, world->agent_pos);
                     
-                    DrawText("TRAINING PAUSED - Press P to resume", 10, 10, 20, RED);
+                    // Draw enhanced status
+                    char status_text[256];
+                    snprintf(status_text, sizeof(status_text), 
+                            "TRAINING PAUSED - Episode: %d/%d | Speed: %.1fx", 
+                            episode + 1, config->num_episodes, control.training_speed);
+                    DrawText(status_text, 10, 10, 20, RED);
+                    
+                    DrawText("SPACE: Resume | R: Reset | V: Q-values | S: Save | L: Load | ESC: Exit", 
+                            10, GetScreenHeight() - 50, 12, DARKBLUE);
                     
                     EndDrawing();
+                    WaitTime(0.016f); // ~60 FPS for smooth UI
                     continue;
                 }
             }
@@ -182,12 +330,12 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
             q_value_count++;
             
             // Render if visualization is enabled
-            if (config->enable_visualization && !training_paused) {
+            if (config->enable_visualization) {
                 BeginDrawing();
                 ClearBackground(RAYWHITE);
                 
                 // Draw environment
-                if (vis_state->config.show_q_values) {
+                if (control.show_q_values) {
                     draw_q_values(vis_state, world, agent);
                 } else {
                     draw_grid_world(vis_state, world);
@@ -197,11 +345,12 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
                 draw_goal(vis_state, world->goal_pos);
                 draw_agent(vis_state, world->agent_pos);
                 
-                // Draw training info
+                // Draw enhanced training info
                 char info_text[512];
                 snprintf(info_text, sizeof(info_text), 
-                        "Episode: %d/%d | Step: %d | Reward: %.1f | Epsilon: %.3f",
-                        episode + 1, config->num_episodes, steps_taken, episode_reward, agent->epsilon);
+                        "Episode: %d/%d | Step: %d | Reward: %.1f | Epsilon: %.3f | Speed: %.1fx",
+                        episode + 1, config->num_episodes, steps_taken, episode_reward, 
+                        agent->epsilon, control.training_speed);
                 DrawText(info_text, 10, 10, 16, BLACK);
                 
                 snprintf(info_text, sizeof(info_text),
@@ -209,31 +358,60 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
                         world->agent_pos.x, world->agent_pos.y,
                         action == ACTION_UP ? "UP" : action == ACTION_DOWN ? "DOWN" : 
                         action == ACTION_LEFT ? "LEFT" : "RIGHT",
-                        vis_state->config.show_q_values ? "ON" : "OFF");
+                        control.show_q_values ? "ON" : "OFF");
                 DrawText(info_text, 10, 30, 14, DARKGRAY);
                 
-                DrawText("P: Pause | Q: Toggle Q-values | G: Toggle Grid | ESC: Exit", 
+                DrawText("SPACE: Pause | R: Reset | V: Q-values | +/-: Speed | S: Save | L: Load | ESC: Exit", 
                         10, GetScreenHeight() - 30, 12, DARKBLUE);
                 
                 EndDrawing();
                 
-                // Control training speed for visualization
-                WaitTime(0.05f); // 50ms delay for visibility
+                // Control training speed
+                float delay = 0.05f / control.training_speed;
+                WaitTime(delay);
             }
         }
         
         // Decay epsilon after each episode
         decay_epsilon(agent);
         
+        // Calculate Q-value variance for performance metrics
+        float q_variance = calculate_q_value_variance(agent);
+        
+        // Check if goal was reached
+        bool goal_reached = (world->agent_pos.x == world->goal_pos.x && 
+                            world->agent_pos.y == world->goal_pos.y);
+        
         // Record episode statistics
         float avg_q_episode = q_value_count > 0 ? total_q_value / q_value_count : 0.0f;
         record_episode(stats, episode, episode_reward, steps_taken, agent->epsilon, avg_q_episode);
         
-        // Print progress
+        // Update performance metrics
+        update_performance_metrics(stats->metrics, stats, episode, goal_reached, q_variance);
+        
+        // Check for convergence
+        bool converged = check_convergence(stats->metrics, episode);
+        if (converged && !config->enable_visualization) {
+            printf("Training converged at episode %d!\n", episode + 1);
+        }
+        
+        // Print progress with enhanced metrics
         if (config->print_progress && (episode + 1) % config->progress_interval == 0) {
             EpisodeStats* episode_stats = &stats->episodes[episode];
             print_episode_progress(episode + 1, episode_stats, agent);
+            
+            // Print learning curves every 200 episodes
+            if ((episode + 1) % (config->progress_interval * 2) == 0) {
+                print_learning_curves(stats, 20);
+            }
+            
+            // Print convergence analysis every 100 episodes
+            if ((episode + 1) % config->progress_interval == 0) {
+                print_convergence_analysis(stats->metrics, episode);
+            }
         }
+        
+        episode++;
     }
     
     training_cleanup:
@@ -243,11 +421,49 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
         
         printf("\nTraining completed!\n");
         printf("Total training time: %.2f seconds\n", training_time);
+        printf("Final training speed: %.1fx\n", control.training_speed);
+        
+        // Print final performance analysis
         print_training_summary(stats);
+        print_learning_curves(stats, 50);  // Show last 50 episodes
+        print_convergence_analysis(stats->metrics, episode - 1);
+        
+        // Save performance data
+        save_performance_data(stats, "performance_data.csv");
         
         // Save policy if requested
         if (config->save_policy && config->policy_filename) {
             save_policy_to_file(agent, world, config->policy_filename);
+        }
+        
+        // Auto-save Q-table at end
+        if (config->enable_visualization) {
+            if (save_q_table(agent, control.qtable_filename)) {
+                printf("Q-table auto-saved to %s\n", control.qtable_filename);
+            }
+        }
+        
+        // Final performance summary
+        if (stats->metrics && stats->current_episode > 0) {
+            printf("\n=== Final Performance Summary ===\n");
+            printf("Episodes completed: %d\n", stats->current_episode);
+            printf("Best episode: %d (reward: %.2f)\n", stats->best_episode + 1, stats->best_reward);
+            printf("Training converged: %s\n", stats->metrics->has_converged ? "Yes" : "No");
+            if (stats->metrics->has_converged) {
+                printf("Convergence episode: %d\n", stats->metrics->convergence_episode + 1);
+            }
+            
+            // Calculate final success rate
+            int successful_episodes = 0;
+            for (int i = 0; i < stats->current_episode; i++) {
+                if (stats->metrics->success_episodes[i]) {
+                    successful_episodes++;
+                }
+            }
+            float final_success_rate = (float)successful_episodes / stats->current_episode * 100.0f;
+            printf("Overall success rate: %.1f%% (%d/%d episodes)\n", 
+                   final_success_rate, successful_episodes, stats->current_episode);
+            printf("==================================\n");
         }
         
         // Cleanup
