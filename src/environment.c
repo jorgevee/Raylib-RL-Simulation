@@ -358,3 +358,169 @@ float calculate_reward(GridWorld* world, Position old_pos __attribute__((unused)
 bool positions_equal(Position a, Position b) {
     return (a.x == b.x && a.y == b.y);
 }
+
+// Convert 2D position to 1D state index
+int position_to_state(GridWorld* world, Position pos) {
+    if (!world) return -1;
+    return pos.y * world->width + pos.x;
+}
+
+// Convert 1D state index to 2D position
+Position state_to_position(GridWorld* world, int state) {
+    Position pos = {-1, -1};
+    if (!world || state < 0 || state >= world->width * world->height) {
+        return pos;
+    }
+    pos.x = state % world->width;
+    pos.y = state / world->width;
+    return pos;
+}
+
+// Get current state structure
+State get_current_state(GridWorld* world) {
+    State state = {0};
+    if (!world) {
+        state.state_index = -1;
+        state.position = (Position){-1, -1};
+        state.is_terminal = true;
+        state.is_valid = false;
+        return state;
+    }
+    
+    state.state_index = get_state_index(world);
+    state.position = world->agent_pos;
+    state.is_terminal = is_terminal_state(world, world->agent_pos);
+    state.is_valid = is_valid_position(world, world->agent_pos.x, world->agent_pos.y);
+    
+    return state;
+}
+
+// Set cell type at specified position
+void set_cell(GridWorld* world, int x, int y, CellType type) {
+    if (!world || !is_valid_position(world, x, y)) {
+        return;
+    }
+    world->grid[y][x] = type;
+}
+
+// Get cell type at specified position
+CellType get_cell(GridWorld* world, int x, int y) {
+    if (!world || !is_valid_position(world, x, y)) {
+        return CELL_WALL; // Safe default for out-of-bounds
+    }
+    return world->grid[y][x];
+}
+
+// Print environment information
+void print_environment_info(GridWorld* world) {
+    if (!world) {
+        printf("Error: Cannot print info for NULL GridWorld\n");
+        return;
+    }
+    
+    printf("\nEnvironment Information:\n");
+    printf("========================\n");
+    printf("Grid size: %dx%d (%d total states)\n", world->width, world->height, 
+           world->width * world->height);
+    printf("Agent position: (%d, %d)\n", world->agent_pos.x, world->agent_pos.y);
+    printf("Start position: (%d, %d)\n", world->start_pos.x, world->start_pos.y);
+    printf("Goal position: (%d, %d)\n", world->goal_pos.x, world->goal_pos.y);
+    printf("Rewards: Goal=%.1f, Wall=%.1f, Step=%.1f\n", 
+           world->goal_reward, world->wall_penalty, world->step_penalty);
+    printf("Max steps per episode: %d\n", world->max_steps);
+    printf("Episode status: %s (steps taken: %d)\n", 
+           world->episode_done ? "Done" : "Active", world->episode_steps);
+    printf("Total reward this episode: %.2f\n", world->total_reward);
+    
+    // Count different cell types
+    int wall_count = 0, obstacle_count = 0;
+    for (int y = 0; y < world->height; y++) {
+        for (int x = 0; x < world->width; x++) {
+            CellType cell = world->grid[y][x];
+            if (cell == CELL_WALL) wall_count++;
+            else if (cell == CELL_OBSTACLE) obstacle_count++;
+        }
+    }
+    printf("Obstacles: %d walls, %d obstacles\n", wall_count, obstacle_count);
+}
+
+// Validate environment configuration
+bool validate_environment(GridWorld* world) {
+    if (!world) {
+        printf("Error: NULL GridWorld\n");
+        return false;
+    }
+    
+    // Check basic parameters
+    if (world->width <= 0 || world->height <= 0) {
+        printf("Error: Invalid grid dimensions: %dx%d\n", world->width, world->height);
+        return false;
+    }
+    
+    if (world->max_steps <= 0) {
+        printf("Error: Invalid max_steps: %d\n", world->max_steps);
+        return false;
+    }
+    
+    // Check positions are within bounds
+    if (!is_valid_position(world, world->start_pos.x, world->start_pos.y)) {
+        printf("Error: Start position (%d, %d) is out of bounds\n", 
+               world->start_pos.x, world->start_pos.y);
+        return false;
+    }
+    
+    if (!is_valid_position(world, world->goal_pos.x, world->goal_pos.y)) {
+        printf("Error: Goal position (%d, %d) is out of bounds\n", 
+               world->goal_pos.x, world->goal_pos.y);
+        return false;
+    }
+    
+    if (!is_valid_position(world, world->agent_pos.x, world->agent_pos.y)) {
+        printf("Error: Agent position (%d, %d) is out of bounds\n", 
+               world->agent_pos.x, world->agent_pos.y);
+        return false;
+    }
+    
+    // Check that start and goal positions are walkable
+    if (!is_walkable(world, world->start_pos.x, world->start_pos.y)) {
+        printf("Error: Start position (%d, %d) is not walkable\n", 
+               world->start_pos.x, world->start_pos.y);
+        return false;
+    }
+    
+    if (!is_walkable(world, world->goal_pos.x, world->goal_pos.y)) {
+        printf("Error: Goal position (%d, %d) is not walkable\n", 
+               world->goal_pos.x, world->goal_pos.y);
+        return false;
+    }
+    
+    // Check that start and goal are different
+    if (positions_equal(world->start_pos, world->goal_pos)) {
+        printf("Warning: Start and goal positions are the same\n");
+    }
+    
+    return true;
+}
+
+// Validate reward values
+bool validate_reward_values(GridWorld* world) {
+    if (!world) return false;
+    
+    // Check that goal reward is positive and larger than penalties
+    if (world->goal_reward <= 0) {
+        printf("Warning: Goal reward %.2f is not positive\n", world->goal_reward);
+        return false;
+    }
+    
+    if (world->goal_reward <= -world->step_penalty) {
+        printf("Warning: Goal reward %.2f is not much larger than step penalty %.2f\n", 
+               world->goal_reward, world->step_penalty);
+    }
+    
+    if (world->goal_reward <= -world->wall_penalty) {
+        printf("Warning: Goal reward %.2f is not much larger than wall penalty %.2f\n", 
+               world->goal_reward, world->wall_penalty);
+    }
+    
+    return true;
+}
