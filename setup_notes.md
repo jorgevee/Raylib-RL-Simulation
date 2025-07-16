@@ -86,7 +86,7 @@ I'll create a comprehensive step-by-step plan to build a reinforcement learning 
    Q(s,a) = Q(s,a) + α[r + γ*max(Q(s',a')) - Q(s,a)]
    ```
 
-### Phase 5: Create Visualization with Raylib
+### Phase 5: Create Visualization with Raylib (Completed)
 
 7. **Set Up Rendering Functions** (Completed)
    - `void init_graphics(int screen_width, int screen_height)`
