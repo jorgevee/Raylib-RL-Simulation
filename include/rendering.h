@@ -15,6 +15,7 @@ typedef struct {
     bool show_grid;             // Whether to show grid lines
     bool show_agent_trail;      // Whether to show agent's path
     bool show_statistics;       // Whether to show training stats
+    bool show_fps;              // Whether to show FPS counter
     float animation_speed;      // Speed of animations (0.0-1.0)
     int fps_target;             // Target FPS
     bool vsync_enabled;         // Whether VSync is enabled

@@ -34,7 +34,7 @@ This simulation implements a comprehensive Q-learning agent that learns to navig
 
 The following graph shows training performance over 500 episodes, demonstrating convergence to optimal policy:
 
-![Training Performance](rl-m.png)
+![Training Performance](rl-ma.png)
 
 *The graph displays reward progression, success rate, and epsilon decay over training episodes using the `performance_data.csv` dataset.*
 
@@ -236,10 +236,6 @@ c_raylib_simulation/
 
 Contributions are welcome! Please follow these guidelines:
 
-1. **Code Style**: Follow existing naming conventions and formatting
-2. **Testing**: Add tests for new features using the test framework
-3. **Documentation**: Update relevant documentation and comments
-4. **Performance**: Maintain or improve existing performance characteristics
 
 ### Development Workflow
 
@@ -259,7 +255,7 @@ make format
 
 ## License
 
-This project is provided for educational and research purposes. See the individual source files for specific licensing information.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgments
 

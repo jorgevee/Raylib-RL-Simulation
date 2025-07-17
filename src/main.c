@@ -160,6 +160,12 @@ void handle_training_input(TrainingControl* control, VisualizationState* vis_sta
     if (IsKeyPressed(KEY_G) && vis_state) {
         vis_state->config.show_grid = !vis_state->config.show_grid;
     }
+    
+    // F: Toggle FPS display
+    if (IsKeyPressed(KEY_F) && vis_state) {
+        vis_state->config.show_fps = !vis_state->config.show_fps;
+        printf("FPS display: %s\n", vis_state->config.show_fps ? "ON" : "OFF");
+    }
 }
 
 // Display control instructions
@@ -174,6 +180,7 @@ void display_control_instructions() {
     printf("L       : Load saved Q-table\n");
     printf("Q       : Toggle Q-value display\n");
     printf("G       : Toggle grid lines\n");
+    printf("F       : Toggle FPS display\n");
     printf("ESC     : Exit training\n");
     printf("========================\n\n");
 }
@@ -301,6 +308,9 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
                     DrawText("SPACE: Resume | R: Reset | V: Q-values | S: Save | L: Load | ESC: Exit", 
                             10, GetScreenHeight() - 50, 12, DARKBLUE);
                     
+                    // Draw FPS counter
+                    draw_fps_counter(vis_state);
+                    
                     EndDrawing();
                     WaitTime(0.016f); // ~60 FPS for smooth UI
                     continue;
@@ -363,6 +373,9 @@ void run_training(GridWorld* world, QLearningAgent* agent, TrainingConfig* confi
                 
                 DrawText("SPACE: Pause | R: Reset | V: Q-values | +/-: Speed | S: Save | L: Load | ESC: Exit", 
                         10, GetScreenHeight() - 30, 12, DARKBLUE);
+                
+                // Draw FPS counter
+                draw_fps_counter(vis_state);
                 
                 EndDrawing();
                 

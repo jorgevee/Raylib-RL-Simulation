@@ -62,3 +62,4 @@ folder_setup.sh
 
 # Documentation build output (but keep source markdown)
 docs/
+markdown_notes/

@@ -46,6 +46,7 @@ void init_graphics(int screen_width, int screen_height) {
         g_vis_state->config.cell_size = 40; // Default cell size
         g_vis_state->config.show_q_values = true;
         g_vis_state->config.show_grid = true;
+        g_vis_state->config.show_fps = true;  // Enable FPS display by default
         g_vis_state->config.fps_target = 60;
         
         // Initialize color scheme
@@ -386,4 +387,77 @@ VisualizationState* init_visualization(int screen_width, int screen_height, int 
 // Destroy visualization (matches header)
 void destroy_visualization(VisualizationState* vis) {
     cleanup_graphics();
+}
+
+// Draw FPS counter in the top-right corner
+void draw_fps_counter(VisualizationState* vis) {
+    if (!vis || !vis->config.show_fps) return;
+    
+    // Get current FPS
+    int current_fps = GetFPS();
+    
+    // Create FPS text
+    char fps_text[32];
+    snprintf(fps_text, sizeof(fps_text), "FPS: %d", current_fps);
+    
+    // Calculate text dimensions
+    int font_size = 20;
+    int text_width = MeasureText(fps_text, font_size);
+    int text_height = font_size;
+    
+    // Position in top-right corner with some padding
+    int padding = 10;
+    int text_x = vis->config.screen_width - text_width - padding;
+    int text_y = padding;
+    
+    // Draw background rectangle for better visibility
+    Rectangle bg_rect = {
+        (float)(text_x - 5),
+        (float)(text_y - 2),
+        (float)(text_width + 10),
+        (float)(text_height + 4)
+    };
+    
+    // Choose background color based on FPS performance
+    Color bg_color;
+    Color text_color;
+    
+    if (current_fps >= vis->config.fps_target - 5) {
+        // Good performance - green background
+        bg_color = (Color){0, 150, 0, 200};  // Semi-transparent green
+        text_color = WHITE;
+    } else if (current_fps >= vis->config.fps_target - 15) {
+        // Moderate performance - yellow background
+        bg_color = (Color){200, 200, 0, 200};  // Semi-transparent yellow
+        text_color = BLACK;
+    } else {
+        // Poor performance - red background
+        bg_color = (Color){200, 0, 0, 200};  // Semi-transparent red
+        text_color = WHITE;
+    }
+    
+    // Draw background
+    DrawRectangleRec(bg_rect, bg_color);
+    DrawRectangleLinesEx(bg_rect, 1.0f, BLACK);
+    
+    // Draw FPS text
+    DrawText(fps_text, text_x, text_y, font_size, text_color);
+    
+    // Optional: Draw additional performance info if FPS is low
+    if (current_fps < vis->config.fps_target - 15) {
+        char warning_text[] = "LOW FPS";
+        int warning_width = MeasureText(warning_text, 16);
+        int warning_x = vis->config.screen_width - warning_width - padding;
+        int warning_y = text_y + text_height + 5;
+        
+        Rectangle warning_bg = {
+            (float)(warning_x - 3),
+            (float)(warning_y - 1),
+            (float)(warning_width + 6),
+            (float)(18)
+        };
+        
+        DrawRectangleRec(warning_bg, (Color){255, 100, 100, 180});
+        DrawText(warning_text, warning_x, warning_y, 16, (Color){139, 0, 0, 255});
+    }
 }

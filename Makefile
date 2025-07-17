@@ -136,12 +136,12 @@ test-environment:
 
 # Test step_environment function
 test-step-env:
-@echo "Compiling step_environment tests..."
-@$(CC) $(CFLAGS) $(INCLUDES) -o test_step_environment test_step_environment.c $(SRC_DIR)/environment.c -lm
-@echo "Running step_environment function tests..."
-@./test_step_environment
-@echo "Cleaning test executable..."
-@rm -f test_step_environment
+	@echo "Compiling step_environment tests..."
+	@$(CC) $(CFLAGS) $(INCLUDES) -o test_step_environment test_step_environment.c $(SRC_DIR)/environment.c -lm
+	@echo "Running step_environment function tests..."
+	@./test_step_environment
+	@echo "Cleaning test executable..."
+	@rm -f test_step_environment
 
 # Test priority experience replay
 test-priority-replay:
