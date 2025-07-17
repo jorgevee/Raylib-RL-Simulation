@@ -234,8 +234,7 @@ c_raylib_simulation/
 
 ## Contributing
 
-Contributions are welcome! Please follow these guidelines:
-
+Contributions are welcome! 
 
 ### Development Workflow
 
